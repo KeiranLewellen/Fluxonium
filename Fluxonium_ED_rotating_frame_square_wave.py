@@ -94,6 +94,7 @@ def sin_sin_t_ordered_Hamiltonian(k, phi_coeff, omega, A, basis):  # Check over
 
 
 def evolve_with_square_drive(n, k, cycle_num, EC, EL, EJ, A, omega, start_state):
+    '''This is the main function that defines the Hamiltonians, evolves the wave function, and calculates E_fid and fidelity'''
     n_coeff = (1j / 2) * (EL / (2 * EC)) ** (1 / 4)
     phi_coeff = ((2 * EC) / EL) ** (1 / 4)
 
