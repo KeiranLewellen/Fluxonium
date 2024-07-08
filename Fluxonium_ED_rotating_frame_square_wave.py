@@ -21,20 +21,20 @@ def square_drive(t, omega):  # Defines a square drive used to drive n
     return np.sign(np.sin(omega * t))
 
 
-def triangular_drive(t, omega):  # Defines the integral of the square drive -- used to drive phi
+def triangular_drive(t, omega):  # Defines the integral of the square drive -- would be used to drive phi in the static frame
     return (2 * np.pi / omega) * np.abs(t * omega / (2 * np.pi) - np.floor(t * omega / (2 * np.pi) + 1/2))
 
 
-def cos_triangular_drive(t, omega, A):  # Defines the integral of the square drive -- used to drive phi
+def cos_triangular_drive(t, omega, A):  # Defines the cosine of the triangular drive
     return np.cos(A*((2 * np.pi / omega) * np.abs(t * omega / (2 * np.pi) - np.floor(t * omega / (2 * np.pi) + 1/2))))
 
 
-def sin_triangular_drive(t, omega, A):  # Defines the integral of the square drive -- used to drive phi
+def sin_triangular_drive(t, omega, A):  # Defines the sine of the triangular drive
     return np.sin(A*((2 * np.pi / omega) * np.abs(t * omega / (2 * np.pi) - np.floor(t * omega / (2 * np.pi) + 1/2))))
 
 
 def make_ordered_exp_b(k, pm_str, phi_coeff, basis):
-    # print(hamiltonian([['', [[(1 + 0j)]]]], [], dtype=np.complex64, basis=basis, check_herm=False).toarray())
+    '''caculates e^(+-i*phi_coeff*b^+), pm_str = "+", "-" defines whether it is a plus or minus'''
     static_exp_phi = []
     for i in range(k+1):
         j = i
@@ -42,13 +42,11 @@ def make_ordered_exp_b(k, pm_str, phi_coeff, basis):
         interactj = [0] * j
         interactj = [[(1/math.factorial(j))*((1j*phi_coeff)**j)] + interactj]
         static_exp_phi.append([pm_j, interactj])
-    # print(static_exp_phi)
     H_exp_b = hamiltonian(static_exp_phi, [], dtype=np.complex64, basis=basis, check_herm=False)
     return H_exp_b
 
 
 def make_ordered_exp_b_cos_t(k, pm_str, phi_coeff, omega, A, basis):
-    # print(hamiltonian([['', [[(1 + 0j)]]]], [], dtype=np.complex64, basis=basis, check_herm=False).toarray())
     dynamic_exp_phi = []
     for i in range(k+1):
         j = i
@@ -56,14 +54,11 @@ def make_ordered_exp_b_cos_t(k, pm_str, phi_coeff, omega, A, basis):
         interactj = [0] * j
         interactj = [[(1/math.factorial(j))*((1j*phi_coeff)**j)] + interactj]
         dynamic_exp_phi.append([pm_j, interactj, cos_triangular_drive, [omega, A]])
-    # print(dynamic_exp_phi)
     H_exp_b = hamiltonian([], dynamic_exp_phi, dtype=np.complex64, basis=basis, check_herm=False)
-    # print(H_exp_b)
     return H_exp_b
 
 
 def make_ordered_exp_b_sin_t(k, pm_str, phi_coeff, omega, A, basis):
-    # print(hamiltonian([['', [[(1 + 0j)]]]], [], dtype=np.complex64, basis=basis, check_herm=False).toarray())
     dynamic_exp_phi = []
     for i in range(k+1):
         j = i
@@ -71,7 +66,6 @@ def make_ordered_exp_b_sin_t(k, pm_str, phi_coeff, omega, A, basis):
         interactj = [0] * j
         interactj = [[(1/math.factorial(j))*((1j*phi_coeff)**j)] + interactj]
         dynamic_exp_phi.append([pm_j, interactj, sin_triangular_drive, [omega, A]])
-    # print(static_exp_phi)
     H_exp_b = hamiltonian([], dynamic_exp_phi, dtype=np.complex64, basis=basis, check_herm=False)
     return H_exp_b
 
@@ -207,7 +201,7 @@ def E_fid_vs_omega_graph(n, k, EC, EL, EJ, omega_list, start_state, cycle_num, a
                 + str(cycle_num)+".pdf")
 
 
-def E_avg_fid_vs_alpha_and_omega_heat_map(n, k, EC, EL, EJ, omega_list, start_state, cycle_num, alpha_list):
+def E_avg_fid_vs_alpha_and_omega_heat_map(n, k, EC, EL, EJ, omega_list, start_state, cycle_num, alpha_list): # I made this in a rush and the x and y tick labels need to be changed to be correct 
     ratio_list = np.linspace(alpha_list[0], alpha_list[1], alpha_list[2])
     omega_arr = np.linspace(omega_list[0], omega_list[1], omega_list[2])
 
@@ -267,7 +261,7 @@ def fidelity_avg_vs_alpha_graph(n, k, EC, EL, EJ, omega, start_state, cycle_num,
                 + str(cycle_num)+".pdf")
 
 
-def fid_avg_vs_alpha_and_omega_heat_map(n, k, EC, EL, EJ, omega_list, start_state, cycle_num, alpha_list):
+def fid_avg_vs_alpha_and_omega_heat_map(n, k, EC, EL, EJ, omega_list, start_state, cycle_num, alpha_list): # I made this in a rush and the x and y tick labels need to be changed to be correct 
     ratio_list = np.linspace(alpha_list[0], alpha_list[1], alpha_list[2])
     omega_arr = np.linspace(omega_list[0], omega_list[1], omega_list[2])
 
@@ -303,15 +297,21 @@ def fid_avg_vs_alpha_and_omega_heat_map(n, k, EC, EL, EJ, omega_list, start_stat
     h5f.create_dataset('data_1', data=end_fid_arr)
 
 
-# Running programs
+# Running functions
 
-cycle_num = 50
-start_state = 5
+cycle_num = 50  # this is the number of drive cycles we evolve the system for
+start_state = 5  # I initialize the system in an eigenstate of H_static = 4E_C n^2 +EJ/2 phi^2. This variable controls which eigenstate (where 0 is the ground state)
 EL = 12.58
 EC = 0.33
 EJ = 12.58
-n = 50
-k = n
+n = 50  # This is the onsite hilbert space basis
+k = n   # k defines the order to which cos(phi) is truncated, taking k=n truncates makes it exact for a given n
+
+# Below we define alpha = A/omega to be the ratio between the drive amplitude A and drive frequency A
+# You will need to make another directory called Plots for the plots to be saved to
+# E_fid is calculated as <H_static(T)>/<H_static(0)> where T is at the end of a cycle
+# to make things less noisy I often average E_fid over all the cycles we evolve over (noted with avg in the function name)
+# fidelity is calculated as |<psi(T)|psi(0)|^2 (as per normal) and also averaged over the cycles considered.
 
 
 #### This makes the graphs for E_fid vs alpha at constant omega
@@ -348,21 +348,10 @@ fidelity_avg_vs_alpha_graph(n, k, EC, EL, EJ, omega, start_state, cycle_num, alp
 """
 
 #### This makes a color map for fidelity avg vs omega and alpha
-
+"""
 alpha_list = [0, 6, 61]
 omega_list = [1, 50, 49]
 fid_avg_vs_alpha_and_omega_heat_map(n, k, EC, EL, EJ, omega_list, start_state, cycle_num, alpha_list)
+"""
 
-"""
-#### These parameters work???
-cycle_num = 50
-start_state = 5
-EL = 12.58
-EC = 0.33
-EJ = 12.58
-omega = 4 * 5.76292
-A = 2 * omega
-n = 50
-k = n
-"""
 
