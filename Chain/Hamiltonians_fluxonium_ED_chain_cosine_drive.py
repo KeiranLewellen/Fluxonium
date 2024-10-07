@@ -107,7 +107,7 @@ def phi_i(site_i, phi_coeff, basis):
 
 
 def cos_ordered(k, L, phi_coeff, basis):
-    """Calculates sum cos(phi) in the normal ordered expansion"""
+    """Calculates sum cos(phi_i) in the normal ordered expansion"""
     H_list = []
     for site_i in range(L):
         H_exp_bp = make_ordered_exp_b(k, site_i,'+', phi_coeff, basis)
@@ -121,13 +121,34 @@ def cos_ordered(k, L, phi_coeff, basis):
     return cos_ordered_H
 
 
+def cos_shifted_ordered(k, L, phi_ext_list, phi_coeff, basis):
+    """Calculates sum cos(phi_i + phi_ext_list[i]) in the normal ordered expansion where phi_ext is a site dependent external flux"""
+    H_list = []
+    for site_i in range(L):
+        H_exp_bp = make_ordered_exp_b(k, site_i,'+', phi_coeff, basis)
+        H_exp_bm = make_ordered_exp_b(k, site_i, '-', phi_coeff, basis)
+        H_exp_mbp = make_ordered_exp_b(k, site_i, '+', -1*phi_coeff, basis)
+        H_exp_mbm = make_ordered_exp_b(k, site_i, '-', -1*phi_coeff, basis)
+        
+        cos_non_comuting_coeff = np.exp(-1*(phi_coeff**2)/2)/2
+        cos_ordered_H_i = cos_non_comuting_coeff*(H_exp_bp*H_exp_bm + H_exp_mbp*H_exp_mbm)
+        sin_non_comuting_coeff = np.exp(-1*(phi_coeff**2)/2)/(2 * 1j)
+        sin_ordered_H_i = sin_non_comuting_coeff*(H_exp_bp*H_exp_bm - H_exp_mbp*H_exp_mbm)
+        
+        cos_shifted_H_i = np.cos(phi_ext_list[site_i])*cos_ordered_H_i - np.sin(phi_ext_list[site_i])*sin_ordered_H_i
+        H_list.append(cos_shifted_H_i)
+    cos_shifted_H = sum(H_list)
+    return cos_shifted_H
+
+
+
 def driven_cos_ordered(k, L, phi_coeff, omega, A, basis):
-    """Calculates sum cos(phi - A*sin(omega*t)) in the normal ordered basis"""
+    """Calculates sum cos(phi_i - A*sin(omega*t)) in the normal ordered basis"""
     return cos_cos_t_ordered_Hamiltonian(k, L, phi_coeff, omega, A, basis) + sin_sin_t_ordered_Hamiltonian(k, L, phi_coeff, omega, A, basis)
 
 
 def n2(L, n_coeff, basis):
-    """Calculates sum n^2"""
+    """Calculates sum n_i^2"""
     coeff_and_loc_list_p = []
     coeff_and_loc_list_m = []
     for m in range(L):
@@ -142,7 +163,7 @@ def n2(L, n_coeff, basis):
 
 
 def phi2(L, phi_coeff, basis):
-    """Calculates sum phi^2"""
+    """Calculates sum phi_i^2"""
     coeff_and_loc_list_p = []
     for m in range(L):
         interactj = [m] * 2
@@ -154,7 +175,7 @@ def phi2(L, phi_coeff, basis):
 
 
 def n(L, n_coeff, basis):
-    """Calculates sum n"""
+    """Calculates sum n_i"""
     coeff_and_loc_list_p = []
     coeff_and_loc_list_m = []
     for m in range(L):
@@ -169,7 +190,7 @@ def n(L, n_coeff, basis):
 
 
 def phi(L, phi_coeff, basis):
-    """Calculates sum phi"""
+    """Calculates sum phi_i"""
     coeff_and_loc_list_p = []
     for m in range(L):
         interactj = [m] * 1
@@ -267,6 +288,10 @@ H_V = V*H.nn(L, n_coeff, basis)
 
 # sum_i first order magnus terms
 H_first_order_magnus = H.magnus_residual(k, L, EC, EJ, n_coeff, phi_coeff, omega, A, basis)
+
+# sum_i cos(phi_i + phi_ext_list[i]) for phi_ext a site dependent external flux
+phi_ext_list = [0.1, 0.2]  # needs to have length L -- in this case L = 2
+cos_shifted_ordered(k, L, phi_ext_list, phi_coeff, basis)
 
 
 ##### Examples of commonly used total Hamiltonians
